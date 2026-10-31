@@ -1,10 +1,9 @@
-package com.pocketdesk.ui
+package com.pocketdesk.app.ui
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,21 +34,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketdesk.R
-import com.pocketdesk.theme.AdwaitaBlue
-import com.pocketdesk.theme.AdwaitaCardBg
-import com.pocketdesk.theme.BorderSubtle
-import com.pocketdesk.theme.TextMuted
-import com.pocketdesk.theme.TextPrimary
 
-enum class ShellScreen {
-    LAUNCHER,
-    SURFACE_DESKTOP,
-    TASKS
+enum class ShellMode {
+    DESKTOP_GRID,
+    SURFACE_WINDOW,
+    TASKS_CAROUSEL
 }
 
+private val NavBgColor = Color(0xEE1E1E1E)
+private val NavActiveColor = Color(0xFF3584E4)
+private val NavInactiveColor = Color(0xFF9A9996)
+private val NavBorderColor = Color(0x33FFFFFF)
+
 @Composable
-fun BottomNavigationBar(
-    currentScreen: ShellScreen,
+fun BottomNavOverlay(
+    currentMode: ShellMode,
     onBackClick: () -> Unit,
     onDesktopClick: () -> Unit,
     onTasksClick: () -> Unit,
@@ -68,15 +66,15 @@ fun BottomNavigationBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(AdwaitaCardBg.copy(alpha = 0.92f))
-                .border(1.dp, BorderSubtle, RoundedCornerShape(32.dp))
+                .height(62.dp)
+                .clip(RoundedCornerShape(31.dp))
+                .background(NavBgColor)
+                .border(1.dp, NavBorderColor, RoundedCornerShape(31.dp))
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavItem(
+            NavButton(
                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                 label = stringResource(R.string.nav_back),
                 isSelected = false,
@@ -86,27 +84,27 @@ fun BottomNavigationBar(
                 }
             )
 
-            NavItem(
+            NavButton(
                 icon = Icons.Default.Apps,
                 label = stringResource(R.string.nav_desktop),
-                isSelected = (currentScreen == ShellScreen.LAUNCHER),
+                isSelected = (currentMode == ShellMode.DESKTOP_GRID),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                     onDesktopClick()
                 }
             )
 
-            NavItem(
+            NavButton(
                 icon = Icons.Default.Layers,
                 label = stringResource(R.string.nav_tasks),
-                isSelected = (currentScreen == ShellScreen.TASKS),
+                isSelected = (currentMode == ShellMode.TASKS_CAROUSEL),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                     onTasksClick()
                 }
             )
 
-            NavItem(
+            NavButton(
                 icon = Icons.Default.Build,
                 label = stringResource(R.string.nav_tools),
                 isSelected = false,
@@ -120,19 +118,18 @@ fun BottomNavigationBar(
 }
 
 @Composable
-private fun NavItem(
+private fun NavButton(
     icon: ImageVector,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val activeColor = if (isSelected) AdwaitaBlue else TextMuted
-    val activeTextColor = if (isSelected) TextPrimary else TextMuted
+    val tintColor = if (isSelected) NavActiveColor else NavInactiveColor
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -141,15 +138,15 @@ private fun NavItem(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = activeColor,
-            modifier = Modifier.size(22.dp)
+            tint = tintColor,
+            modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
             fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = activeTextColor
+            color = tintColor
         )
     }
 }

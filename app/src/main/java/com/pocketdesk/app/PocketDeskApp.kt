@@ -1,4 +1,4 @@
-package com.pocketdesk
+package com.pocketdesk.app
 
 import android.app.Application
 import android.app.NotificationChannel

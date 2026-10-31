@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    namespace = "com.pocketdesk"
+    namespace = "com.pocketdesk.app"
     compileSdk = 34
     ndkVersion = "27.1.12297006"
 
     defaultConfig {
-        applicationId = "com.pocketdesk"
+        applicationId = "com.pocketdesk.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

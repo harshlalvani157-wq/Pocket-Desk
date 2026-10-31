@@ -1,4 +1,4 @@
-package com.pocketdesk.ui
+package com.pocketdesk.app.ui
 
 import android.content.ClipboardManager
 import android.content.Context
@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -45,18 +44,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.pocketdesk.service.LinuxBridgeService
-import com.pocketdesk.theme.AdwaitaBlue
-import com.pocketdesk.theme.AdwaitaCardBg
-import com.pocketdesk.theme.AdwaitaCardElevated
-import com.pocketdesk.theme.BorderSubtle
-import com.pocketdesk.theme.TextPrimary
-import com.pocketdesk.theme.TextSecondary
+import com.pocketdesk.app.runtime.NativeBridge
 
 @Composable
 fun KeyboardRibbon(
-    bridgeService: LinuxBridgeService?,
-    onToggleKeyboardMode: () -> Unit,
+    onToggleKeyboard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -73,10 +65,9 @@ fun KeyboardRibbon(
         if (isCtrlLatched) modifiers = modifiers or 1
         if (isAltLatched) modifiers = modifiers or 2
 
-        bridgeService?.sendKeyEvent(keyCode, true, modifiers)
-        bridgeService?.sendKeyEvent(keyCode, false, modifiers)
+        NativeBridge.sendKeyEvent(keyCode, true, modifiers)
+        NativeBridge.sendKeyEvent(keyCode, false, modifiers)
 
-        // Reset latches after firing key
         if (isCtrlLatched) isCtrlLatched = false
         if (isAltLatched) isAltLatched = false
     }
@@ -85,8 +76,8 @@ fun KeyboardRibbon(
         modifier = modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(AdwaitaCardBg.copy(alpha = 0.95f))
-            .border(width = 0.5.dp, color = BorderSubtle)
+            .background(Color(0xF0242424))
+            .border(width = 0.5.dp, color = Color(0x33FFFFFF))
             .padding(horizontal = 4.dp, vertical = 4.dp)
     ) {
         Row(
@@ -96,20 +87,12 @@ fun KeyboardRibbon(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Esc Key
-            RibbonKeyButton(text = "Esc", onClick = { sendKey(KeyEvent.KEYCODE_ESCAPE) })
+            KeyButton(text = "Esc", onClick = { sendKey(KeyEvent.KEYCODE_ESCAPE) })
+            KeyButton(text = "Tab", onClick = { sendKey(KeyEvent.KEYCODE_TAB) })
+            KeyButton(text = "/", onClick = { sendKey(KeyEvent.KEYCODE_SLASH) })
+            KeyButton(text = "-", onClick = { sendKey(KeyEvent.KEYCODE_MINUS) })
 
-            // Tab Key
-            RibbonKeyButton(text = "Tab", onClick = { sendKey(KeyEvent.KEYCODE_TAB) })
-
-            // Slash /
-            RibbonKeyButton(text = "/", onClick = { sendKey(KeyEvent.KEYCODE_SLASH) })
-
-            // Minus -
-            RibbonKeyButton(text = "-", onClick = { sendKey(KeyEvent.KEYCODE_MINUS) })
-
-            // Ctrl (Latchable)
-            RibbonKeyButton(
+            KeyButton(
                 text = "Ctrl",
                 isLatched = isCtrlLatched,
                 onClick = {
@@ -118,8 +101,7 @@ fun KeyboardRibbon(
                 }
             )
 
-            // Alt (Latchable)
-            RibbonKeyButton(
+            KeyButton(
                 text = "Alt",
                 isLatched = isAltLatched,
                 onClick = {
@@ -128,9 +110,8 @@ fun KeyboardRibbon(
                 }
             )
 
-            // Paste Key
-            RibbonIconButton(
-                icon = { Icon(Icons.Default.ContentPaste, contentDescription = "Paste", tint = TextPrimary, modifier = Modifier.size(16.dp)) },
+            IconButton(
+                icon = { Icon(Icons.Default.ContentPaste, contentDescription = "Paste", tint = Color.White, modifier = Modifier.size(16.dp)) },
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -139,16 +120,15 @@ fun KeyboardRibbon(
                         val text = clip.getItemAt(0).text?.toString() ?: ""
                         for (ch in text) {
                             val code = KeyEvent.getDeadChar(0, ch.code)
-                            bridgeService?.sendKeyEvent(code, true, 0)
-                            bridgeService?.sendKeyEvent(code, false, 0)
+                            NativeBridge.sendKeyEvent(code, true, 0)
+                            NativeBridge.sendKeyEvent(code, false, 0)
                         }
                     }
                 }
             )
 
-            // Combos Menu Key
             Box {
-                RibbonKeyButton(
+                KeyButton(
                     text = "Combos",
                     onClick = {
                         view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
@@ -159,73 +139,68 @@ fun KeyboardRibbon(
                 DropdownMenu(
                     expanded = showCombosMenu,
                     onDismissRequest = { showCombosMenu = false },
-                    modifier = Modifier.background(AdwaitaCardElevated)
+                    modifier = Modifier.background(Color(0xFF2E2E2E))
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Ctrl + C (Copy / Interrupt)", color = TextPrimary, fontSize = 13.sp) },
+                        text = { Text("Ctrl + C (Copy / Interrupt)", color = Color.White, fontSize = 13.sp) },
                         onClick = {
                             showCombosMenu = false
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_C, true, 1)
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_C, false, 1)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_C, true, 1)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_C, false, 1)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Ctrl + V (Paste)", color = TextPrimary, fontSize = 13.sp) },
+                        text = { Text("Ctrl + V (Paste)", color = Color.White, fontSize = 13.sp) },
                         onClick = {
                             showCombosMenu = false
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_V, true, 1)
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_V, false, 1)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_V, true, 1)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_V, false, 1)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Ctrl + Z (Suspend / Undo)", color = TextPrimary, fontSize = 13.sp) },
+                        text = { Text("Ctrl + Z (Suspend / Undo)", color = Color.White, fontSize = 13.sp) },
                         onClick = {
                             showCombosMenu = false
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_Z, true, 1)
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_Z, false, 1)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_Z, true, 1)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_Z, false, 1)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Alt + F4 (Close Window)", color = TextPrimary, fontSize = 13.sp) },
+                        text = { Text("Alt + F4 (Close Window)", color = Color.White, fontSize = 13.sp) },
                         onClick = {
                             showCombosMenu = false
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_F4, true, 2)
-                            bridgeService?.sendKeyEvent(KeyEvent.KEYCODE_F4, false, 2)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_F4, true, 2)
+                            NativeBridge.sendKeyEvent(KeyEvent.KEYCODE_F4, false, 2)
                         }
                     )
                 }
             }
 
-            // Arrow Left
-            RibbonIconButton(
-                icon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Left", tint = TextPrimary, modifier = Modifier.size(16.dp)) },
+            IconButton(
+                icon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Left", tint = Color.White, modifier = Modifier.size(16.dp)) },
                 onClick = { sendKey(KeyEvent.KEYCODE_DPAD_LEFT) }
             )
 
-            // Arrow Up
-            RibbonIconButton(
-                icon = { Icon(Icons.Default.ArrowUpward, contentDescription = "Up", tint = TextPrimary, modifier = Modifier.size(16.dp)) },
+            IconButton(
+                icon = { Icon(Icons.Default.ArrowUpward, contentDescription = "Up", tint = Color.White, modifier = Modifier.size(16.dp)) },
                 onClick = { sendKey(KeyEvent.KEYCODE_DPAD_UP) }
             )
 
-            // Arrow Down
-            RibbonIconButton(
-                icon = { Icon(Icons.Default.ArrowDownward, contentDescription = "Down", tint = TextPrimary, modifier = Modifier.size(16.dp)) },
+            IconButton(
+                icon = { Icon(Icons.Default.ArrowDownward, contentDescription = "Down", tint = Color.White, modifier = Modifier.size(16.dp)) },
                 onClick = { sendKey(KeyEvent.KEYCODE_DPAD_DOWN) }
             )
 
-            // Arrow Right
-            RibbonIconButton(
-                icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Right", tint = TextPrimary, modifier = Modifier.size(16.dp)) },
+            IconButton(
+                icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Right", tint = Color.White, modifier = Modifier.size(16.dp)) },
                 onClick = { sendKey(KeyEvent.KEYCODE_DPAD_RIGHT) }
             )
 
-            // Keyboard Mode Switcher (Android IME vs Linux squeekboard)
-            RibbonIconButton(
-                icon = { Icon(Icons.Default.Keyboard, contentDescription = "Switch Keyboard", tint = AdwaitaBlue, modifier = Modifier.size(16.dp)) },
+            IconButton(
+                icon = { Icon(Icons.Default.Keyboard, contentDescription = "Toggle Keyboard", tint = Color(0xFF3584E4), modifier = Modifier.size(16.dp)) },
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                    onToggleKeyboardMode()
+                    onToggleKeyboard()
                 }
             )
         }
@@ -233,14 +208,13 @@ fun KeyboardRibbon(
 }
 
 @Composable
-private fun RibbonKeyButton(
+private fun KeyButton(
     text: String,
     onClick: () -> Unit,
     isLatched: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val bgColor = if (isLatched) AdwaitaBlue else AdwaitaCardElevated
-    val textColor = if (isLatched) TextPrimary else TextSecondary
+    val bgColor = if (isLatched) Color(0xFF3584E4) else Color(0xFF383838)
 
     Box(
         modifier = modifier
@@ -253,7 +227,7 @@ private fun RibbonKeyButton(
     ) {
         Text(
             text = text,
-            color = textColor,
+            color = Color.White,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.Monospace
@@ -262,7 +236,7 @@ private fun RibbonKeyButton(
 }
 
 @Composable
-private fun RibbonIconButton(
+private fun IconButton(
     icon: @Composable () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -272,7 +246,7 @@ private fun RibbonIconButton(
             .height(34.dp)
             .width(36.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(AdwaitaCardElevated)
+            .background(Color(0xFF383838))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {

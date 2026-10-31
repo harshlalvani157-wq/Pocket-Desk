@@ -5,8 +5,6 @@ project("pocketdesk_bridge" LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_definitions(-DGL_GLEXT_PROTOTYPES -DEGL_EGLEXT_PROTOTYPES)
-
 find_library(log-lib log)
 find_library(android-lib android)
 find_library(egl-lib EGL)
@@ -14,8 +12,9 @@ find_library(gles2-lib GLESv2)
 find_library(jnigraphics-lib jnigraphics)
 
 add_library(pocketdesk_bridge SHARED
-    display_bridge.cpp
-    runner_bridge.cpp
+    display_server.cpp
+    process_runner.cpp
+    jni_bridge.cpp
 )
 
 target_include_directories(pocketdesk_bridge PRIVATE
@@ -30,17 +29,17 @@ target_link_libraries(pocketdesk_bridge
     ${jnigraphics-lib}
 )
 
-# Also create liblindesk_display.so target for compatibility with LinDesk display spec
-add_library(lindesk_display SHARED
-    display_bridge.cpp
-    runner_bridge.cpp
+add_library(pocketdesk_display SHARED
+    display_server.cpp
+    process_runner.cpp
+    jni_bridge.cpp
 )
 
-target_include_directories(lindesk_display PRIVATE
+target_include_directories(pocketdesk_display PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(lindesk_display
+target_link_libraries(pocketdesk_display
     ${log-lib}
     ${android-lib}
     ${egl-lib}

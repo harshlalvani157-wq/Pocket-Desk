@@ -1,6 +1,5 @@
-package com.pocketdesk.ui
+package com.pocketdesk.app.ui
 
-import android.graphics.Bitmap
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -27,9 +26,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LayersClear
 import androidx.compose.material3.Card
@@ -56,32 +56,27 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketdesk.R
-import com.pocketdesk.model.RunningTask
-import com.pocketdesk.theme.AdwaitaCardBg
-import com.pocketdesk.theme.AdwaitaCardElevated
-import com.pocketdesk.theme.AdwaitaDestructive
-import com.pocketdesk.theme.BorderSubtle
-import com.pocketdesk.theme.TextMuted
-import com.pocketdesk.theme.TextPrimary
-import com.pocketdesk.theme.TextSecondary
+import com.pocketdesk.app.model.RunningWindow
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
 fun TaskSwitcherScreen(
-    tasks: List<RunningTask>,
-    onFocusTask: (Int) -> Unit,
-    onDismissTask: (Int) -> Unit,
+    tasks: List<RunningWindow>,
+    onFocusWindow: (Long) -> Unit,
+    onCloseWindow: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val coroutineScope = rememberCoroutineScope()
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(AdwaitaCardBg)
+            .background(Color(0xFF1E1E1E))
             .padding(top = 16.dp, bottom = 80.dp)
     ) {
         if (tasks.isEmpty()) {
-            EmptyTasksState(modifier = Modifier.align(Alignment.Center))
+            EmptyTaskView(modifier = Modifier.align(Alignment.Center))
         } else {
             val pagerState = rememberPagerState(
                 initialPage = 0,
@@ -94,43 +89,79 @@ fun TaskSwitcherScreen(
             ) {
                 // Header instruction label
                 Text(
-                    text = stringResource(R.string.task_switcher_hint),
-                    color = TextMuted,
+                    text = "Swipe to switch · Tap to open · Swipe up to close",
+                    color = Color(0xFF9A9996),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
                 )
 
-                // Current Card Indicator: N / Total · App Name
                 val safeIndex = pagerState.currentPage.coerceIn(0, tasks.size - 1)
                 val currentTask = tasks[safeIndex]
 
-                Text(
-                    text = "${safeIndex + 1} / ${tasks.size} · ${currentTask.app.name}",
-                    color = TextPrimary,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 6.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Multi-tasking Card Deck (HorizontalPager)
+                // Card deck carousel
                 HorizontalPager(
                     state = pagerState,
                     contentPadding = PaddingValues(horizontal = 48.dp),
-                    pageSpacing = 20.dp,
+                    pageSpacing = 16.dp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                 ) { page ->
                     val task = tasks[page]
-                    TaskCarouselCard(
+                    TaskCard(
                         task = task,
-                        onTap = { onFocusTask(task.pid) },
-                        onSwipeUpDismiss = { onDismissTask(task.pid) }
+                        onTap = { onFocusWindow(task.windowId) },
+                        onSwipeUp = { onCloseWindow(task.pid) }
                     )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Bottom Pagination Controls with arrows: < N / Total · App Name >
+                Row(
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    IconButton(
+                        onClick = {
+                            if (pagerState.currentPage > 0) {
+                                coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                            }
+                        },
+                        enabled = (pagerState.currentPage > 0)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = "Previous",
+                            tint = if (pagerState.currentPage > 0) Color.White else Color(0x33FFFFFF)
+                        )
+                    }
+
+                    Text(
+                        text = "${safeIndex + 1} / ${tasks.size} · ${currentTask.title}",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (pagerState.currentPage < tasks.size - 1) {
+                                coroutineScope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                            }
+                        },
+                        enabled = (pagerState.currentPage < tasks.size - 1)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Next",
+                            tint = if (pagerState.currentPage < tasks.size - 1) Color.White else Color(0x33FFFFFF)
+                        )
+                    }
                 }
             }
         }
@@ -138,10 +169,10 @@ fun TaskSwitcherScreen(
 }
 
 @Composable
-private fun TaskCarouselCard(
-    task: RunningTask,
+private fun TaskCard(
+    task: RunningWindow,
     onTap: () -> Unit,
-    onSwipeUpDismiss: () -> Unit,
+    onSwipeUp: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
@@ -167,15 +198,13 @@ private fun TaskCarouselCard(
                 state = draggableState,
                 orientation = Orientation.Vertical,
                 onDragStopped = { velocity ->
-                    if (offsetY.value < -220f || velocity < -800f) {
-                        // Dismiss gesture triggered (kill SIGTERM)
+                    if (offsetY.value < -200f || velocity < -800f) {
                         view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                         coroutineScope.launch {
                             offsetY.animateTo(-1200f, tween(200))
-                            onSwipeUpDismiss()
+                            onSwipeUp()
                         }
                     } else {
-                        // Snap back
                         coroutineScope.launch {
                             offsetY.animateTo(0f, tween(150))
                             alphaAnim.animateTo(1f, tween(150))
@@ -187,26 +216,26 @@ private fun TaskCarouselCard(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = AdwaitaCardElevated),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF262626)),
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(9f / 16f)
-                .border(1.5.dp, BorderSubtle, RoundedCornerShape(24.dp))
+                .border(1.5.dp, Color(0x33FFFFFF), RoundedCornerShape(22.dp))
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Top header of card: App title & close button
+                // Card header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = task.app.name,
-                        color = TextPrimary,
-                        fontSize = 15.sp,
+                        text = task.title,
+                        color = Color.White,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -215,37 +244,36 @@ private fun TaskCarouselCard(
 
                     IconButton(
                         onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                             coroutineScope.launch {
                                 offsetY.animateTo(-1200f, tween(200))
-                                onSwipeUpDismiss()
+                                onSwipeUp()
                             }
                         },
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(26.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = AdwaitaDestructive,
-                            modifier = Modifier.size(18.dp)
+                            tint = Color(0xFFE01B24),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                // Thumbnail area: Live snapshot or placeholder
+                // Window Snapshot Body
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(horizontal = 12.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .padding(horizontal = 10.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(Color.Black),
                     contentAlignment = Alignment.Center
                 ) {
                     if (task.thumbnail != null) {
                         Image(
                             bitmap = task.thumbnail.asImageBitmap(),
-                            contentDescription = "Window snapshot",
+                            contentDescription = task.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -254,28 +282,25 @@ private fun TaskCarouselCard(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            AppIconRenderer(app = task.app, size = 64.dp)
-                            Spacer(modifier = Modifier.height(12.dp))
+                            AppIconBadge(app = task.app, size = 60.dp)
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Active Window (PID ${task.pid})",
-                                color = TextMuted,
+                                text = "Running [PID ${task.pid}]",
+                                color = Color(0xFF9A9996),
                                 fontSize = 12.sp
                             )
                         }
                     }
                 }
 
-                // Bottom of card: centered App icon
+                // Centered App icon badge at the bottom of the card
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 14.dp),
+                        .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    AppIconRenderer(
-                        app = task.app,
-                        size = 40.dp
-                    )
+                    AppIconBadge(app = task.app, size = 36.dp)
                 }
             }
         }
@@ -283,7 +308,7 @@ private fun TaskCarouselCard(
 }
 
 @Composable
-private fun EmptyTasksState(modifier: Modifier = Modifier) {
+private fun EmptyTaskView(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -292,20 +317,20 @@ private fun EmptyTasksState(modifier: Modifier = Modifier) {
         Icon(
             imageVector = Icons.Default.LayersClear,
             contentDescription = null,
-            tint = TextMuted,
-            modifier = Modifier.size(64.dp)
+            tint = Color(0xFF77767B),
+            modifier = Modifier.size(56.dp)
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
         Text(
-            text = stringResource(R.string.no_running_tasks),
-            color = TextSecondary,
+            text = "No open apps",
+            color = Color.LightGray,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "Tap Desktop to launch a Mobian app",
-            color = TextMuted,
+            text = "Tap Desktop to open an app",
+            color = Color(0xFF9A9996),
             fontSize = 13.sp
         )
     }
