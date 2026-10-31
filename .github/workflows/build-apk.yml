@@ -11,6 +11,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_API: 34
+      NDK_VERSION: 27.1.12297006
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,15 +27,20 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup Android SDK & NDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 'latest'
-
-      - name: Install NDK & CMake
+      - name: Configure Android SDK
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "ndk;27.1.12297006" "cmake;3.22.1"
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_ROOT/platform-tools"           >> $GITHUB_PATH
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Install Android SDK & NDK components
+        run: |
+          sdkmanager "platforms;android-${ANDROID_API}" \
+                     "build-tools;34.0.0" \
+                     "ndk;${NDK_VERSION}" \
+                     "cmake;3.22.1"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
