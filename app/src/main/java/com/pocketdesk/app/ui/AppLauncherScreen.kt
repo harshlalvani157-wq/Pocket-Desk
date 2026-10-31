@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
-import com.pocketdesk.R
+import com.pocketdesk.app.R
 import com.pocketdesk.app.model.AppItem
 import java.io.File
 
