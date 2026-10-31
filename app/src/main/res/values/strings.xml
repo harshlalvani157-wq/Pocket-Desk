@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">PocketDesk</string>
+    <string name="nav_back">Back</string>
+    <string name="nav_desktop">Desktop</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_tools">Tools</string>
+    <string name="search_hint">Search apps…</string>
+    <string name="task_switcher_hint">Swipe to switch · Tap to open · Swipe up to close</string>
+    <string name="no_running_tasks">No apps currently open</string>
+    <string name="launching_app">Starting Linux application…</string>
+    <string name="service_notification_title">PocketDesk Runtime</string>
+    <string name="service_notification_desc">Debian 13 userland &amp; display server running</string>
+</resources>
